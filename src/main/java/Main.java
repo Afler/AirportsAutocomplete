@@ -74,28 +74,33 @@ public class Main {
             long end = 0;
             Character desiredChar;
             while (!(request = scanner.nextLine().toLowerCase()).equals("!quit")) {
-                desiredChar = Character.toLowerCase(request.charAt(0));
-                count = 0;
-                reader.seek(0);
-                ans.setLength(0);
-                if (prefixesMap.containsKey(desiredChar)) {
-                    start = System.currentTimeMillis();
-                    for (Map.Entry<String, List<Long>> entry : prefixesMap.get(desiredChar).entrySet()) {
-                        innerMapKey = entry.getKey();
-                        if (innerMapKey.startsWith(request)) {
-                            ++count;
-                            ans.append(innerMapKey);
-                            for (Long localPointer : entry.getValue()) {
-                                reader.seek(localPointer);
-                                ans.append("[").append(reader.readLine()).append("]").append("\n");
+                if (!request.isBlank()) {
+                    desiredChar = Character.toLowerCase(request.charAt(0));
+                    count = 0;
+                    reader.seek(0);
+                    ans.setLength(0);
+                    if (prefixesMap.containsKey(desiredChar)) {
+                        start = System.currentTimeMillis();
+                        for (Map.Entry<String, List<Long>> entry : prefixesMap.get(desiredChar).entrySet()) {
+                            innerMapKey = entry.getKey();
+                            if (innerMapKey.startsWith(request)) {
+                                ++count;
+                                ans.append(innerMapKey);
+                                for (Long localPointer : entry.getValue()) {
+                                    reader.seek(localPointer);
+                                    ans.append("[").append(reader.readLine()).append("]").append("\n");
+                                }
                             }
                         }
+                        end = System.currentTimeMillis();
                     }
-                    end = System.currentTimeMillis();
+
+                    System.out.println(ans);
+                    System.out.println("Количество совпадений: " + count);
+                    System.out.println("Время поиска: " + (end - start) + "мс");
+                } else {
+                    System.out.println("Некорректный запрос");
                 }
-                System.out.println(ans);
-                System.out.println("Количество совпадений: " + count);
-                System.out.println("Время поиска: " + (end - start) + "мс");
                 System.out.println("Введите запрос: ");
             }
 
