@@ -1,11 +1,6 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 /*
 * Перечитывать все строки файла при каждом поиске нельзя  
@@ -35,55 +30,75 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         int searchingColumn = Integer.parseInt(args[0]);
-        System.out.println(searchingColumn);
+        System.out.println("Колонка поиска: " + searchingColumn);
         if (searchingColumn <= 0 || searchingColumn > 14) {
             throw new IllegalArgumentException("Допустимые столбцы для поиска 1-14");
         }
 
         try {
-            HashMap<String, String> history = new HashMap<>();
-
-            /*
-             * Make a Hashmap<StringPrefix, StringsWithThatPrefix> of selected column values
-             * */
-//            HashMap<Character, List<String>> searchingColumnData = new HashMap<>();
-//
-//            StringBuilder dataBuilder = new StringBuilder();
-//            while ((currStr = reader.readLine()) != null) {
-//                String substring = currStr.split(",")[searchingColumn - 1].replaceAll("^\"*|\"*$", "");
-//                Character key = substring.charAt(0);
-//                dataBuilder.append(substring).append("[").append(currStr).append("]").append("\n");
-//                if (!searchingColumnData.containsKey(key)) {
-//                    searchingColumnData.put(key, new ArrayList<>());
-//                }
-//                searchingColumnData.get(key).add(dataBuilder.toString());
-//            }
-
-            BufferedReader reader = new BufferedReader(new FileReader("src\\main\\resources\\airports.csv"));
+            String path = System.getenv().getOrDefault("AutocompleteFilePath", "C:\\Users\\555\\IdeaProjects\\AirportsAutocomplete\\src\\main\\resources\\airports.csv");
+            RandomAccessFile reader = new RandomAccessFile(path, "r");
+            Map<Character, TreeMap<String, List<Long>>> prefixesMap = new TreeMap<>();
             String currStr;
+            long pointer;
+            String substring;
+            Character key;
+            TreeMap<String, List<Long>> innerMap;
+            System.out.println("Предварительная обработка");
+            while (true) {
+                pointer = reader.getFilePointer();
+                if ((currStr = reader.readLine()) != null) {
+                    substring = currStr.split(",")[searchingColumn - 1].replace("\"", "").toLowerCase();
+                    key = Character.toLowerCase(substring.charAt(0));
+                    if (!prefixesMap.containsKey(key)) {
+                        prefixesMap.put(key, new TreeMap<>());
+                    }
+                    innerMap = prefixesMap.get(key);
+                    if (!innerMap.containsKey(substring)) {
+                        innerMap.put(substring, new ArrayList<>());
+                    }
+                    innerMap.get(substring).add(pointer);
+                } else {
+                    break;
+                }
+            }
+            System.out.println("Предварительная обработка завершена");
+
             Scanner scanner = new Scanner(System.in);
             String request;
+            StringBuilder ans = new StringBuilder();
             System.out.println("Введите запрос: ");
-            String cachedResultsForRequest;
-            while (!(request = scanner.nextLine()).equals("!quit")) {
-                if ((cachedResultsForRequest = history.get(request)) != null) {
-                    System.out.println(cachedResultsForRequest);
-                } else {
-                    StringBuilder ans = new StringBuilder();
-                    String substring;
-                    long start = System.currentTimeMillis();
-                    while ((currStr = reader.readLine()) != null) {
-//                        substring = currStr.split(",")[searchingColumn - 1].replaceAll("^\"*|\"*$", "");
-                        substring = currStr.split(",")[searchingColumn - 1].replace("\"", "");
-                        if (substring.startsWith(request)) {
-                            ans.append(substring).append("[").append(currStr).append("]").append("\n");
+            String innerMapKey;
+            int count;
+            long start;
+            long end;
+            Character desiredChar;
+            while (!(request = scanner.nextLine().toLowerCase()).equals("!quit")) {
+                desiredChar = Character.toLowerCase(request.charAt(0));
+                count = 0;
+                reader.seek(0);
+                ans.setLength(0);
+                if (prefixesMap.containsKey(desiredChar)) {
+                    start = System.currentTimeMillis();
+                    for (Map.Entry<String, List<Long>> entry : prefixesMap.get(desiredChar).entrySet()) {
+                        innerMapKey = entry.getKey();
+                        if (innerMapKey.startsWith(request)) {
+                            ++count;
+                            ans.append(innerMapKey);
+                            for (Long localPointer : entry.getValue()) {
+                                reader.seek(localPointer);
+                                ans.append("[").append(reader.readLine()).append("]").append("\n");
+                            }
                         }
                     }
-                    long end = System.currentTimeMillis();
-                    history.put(request, ans.toString());
-                    System.out.println(ans);
-                    System.out.println("Время поиска: " + (end - start) + "мс");
+                    end = System.currentTimeMillis();
+                } else {
+                    System.out.println("Нет совпадений");
+                    continue;
                 }
+                System.out.println(ans);
+                System.out.println("Количество совпадений: " + count);
+                System.out.println("Время поиска: " + (end - start) + "мс");
                 System.out.println("Введите запрос: ");
             }
 
