@@ -14,7 +14,7 @@ import java.util.*;
 данные из файла).
 *
 Для корректной работы программе требуется не более 7 МБ памяти  
-(все запуски java –jar должны выполняться с флагом ).
+(все запуски java –jar должны выполняться с флагом -Xmx7m).
 
 Скорость поиска должна быть максимально высокой с учетом требований выше  
 (в качестве ориентира можно взять число из скриншота выше: на поиск по «Bo», который
@@ -49,7 +49,7 @@ public class Main {
                 pointer = reader.getFilePointer();
                 if ((currStr = reader.readLine()) != null) {
                     substring = currStr.split(",")[searchingColumn - 1].replace("\"", "").toLowerCase();
-                    key = Character.toLowerCase(substring.charAt(0));
+                    key = substring.charAt(0);
                     if (!prefixesMap.containsKey(key)) {
                         prefixesMap.put(key, new TreeMap<>());
                     }
@@ -70,8 +70,8 @@ public class Main {
             System.out.println("Введите запрос: ");
             String innerMapKey;
             int count;
-            long start;
-            long end;
+            long start = 0;
+            long end = 0;
             Character desiredChar;
             while (!(request = scanner.nextLine().toLowerCase()).equals("!quit")) {
                 desiredChar = Character.toLowerCase(request.charAt(0));
@@ -92,9 +92,6 @@ public class Main {
                         }
                     }
                     end = System.currentTimeMillis();
-                } else {
-                    System.out.println("Нет совпадений");
-                    continue;
                 }
                 System.out.println(ans);
                 System.out.println("Количество совпадений: " + count);
